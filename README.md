@@ -13,6 +13,14 @@ A Python tool that packs a [LiaScript](https://liascript.github.io/) course — 
 
 ## Installation
 
+With [Poetry](https://python-poetry.org/):
+
+```bash
+poetry add pack-liascript-course
+```
+
+Or install directly with pip:
+
 ```bash
 pip install pack-liascript-course
 ```
@@ -21,6 +29,20 @@ Or with [pipx](https://pipx.pypa.io/) for an isolated global install:
 
 ```bash
 pipx install pack-liascript-course
+```
+
+### Development install
+
+```bash
+git clone https://github.com/TUBAF-IfI-LiaScript/pack_liascript_course.git
+cd pack_liascript_course
+poetry install
+```
+
+After running `poetry install`, the `pack-liascript-course` command is available inside the Poetry environment:
+
+```bash
+poetry run pack-liascript-course <source>
 ```
 
 ## CLI Usage
