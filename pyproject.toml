@@ -5,7 +5,7 @@ description = "Pack a LiaScript course (Markdown file + relative dependencies) i
 authors = ["TUBAF-IfI-LiaScript"]
 license = "CC0-1.0"
 readme = "README.md"
-packages = [{include = "pack_liascript_course.py"}]
+packages = [{include = "pack_liascript_course", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -21,4 +21,4 @@ requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
-testpaths = ["test_pack_liascript_course.py"]
+testpaths = ["tests"]
