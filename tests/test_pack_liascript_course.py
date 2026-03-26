@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-import pack_liascript_course as packer
+from pack_liascript_course import pack_liascript_course as packer
 
 
 # ---------------------------------------------------------------------------

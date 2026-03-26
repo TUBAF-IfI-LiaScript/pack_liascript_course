@@ -14,7 +14,7 @@ python = "^3.10"
 pytest = "^8.0"
 
 [tool.poetry.scripts]
-pack-liascript-course = "pack_liascript_course:main"
+pack-liascript-course = "pack_liascript_course.pack_liascript_course:main"
 
 [build-system]
 requires = ["poetry-core"]
