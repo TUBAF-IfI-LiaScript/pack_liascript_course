@@ -122,15 +122,73 @@ class TestExtractRelativeLinks:
         links = packer.extract_relative_links(content)
         assert "js/quiz.js" in links
 
-    def test_liascript_import(self):
-        content = "@import 'macros.md'"
+    # ------------------------------------------------------------------
+    # YAML frontmatter tests
+    # ------------------------------------------------------------------
+
+    def test_yaml_import_scalar(self):
+        content = "---\nimport: macros.md\n---\n# Body"
         links = packer.extract_relative_links(content)
         assert "macros.md" in links
 
-    def test_liascript_import_double_quotes(self):
-        content = '@import "https://example.com/remote.md"'
+    def test_yaml_import_list(self):
+        content = "---\nimport:\n  - macros.md\n  - helpers.md\n---\n"
         links = packer.extract_relative_links(content)
+        assert "macros.md" in links
+        assert "helpers.md" in links
+
+    def test_yaml_link_scalar(self):
+        content = "---\nlink: styles/custom.css\n---\n"
+        links = packer.extract_relative_links(content)
+        assert "styles/custom.css" in links
+
+    def test_yaml_link_list(self):
+        content = "---\nlink:\n  - styles/a.css\n  - styles/b.css\n---\n"
+        links = packer.extract_relative_links(content)
+        assert "styles/a.css" in links
+        assert "styles/b.css" in links
+
+    def test_yaml_script_scalar(self):
+        content = "---\nscript: js/init.js\n---\n"
+        links = packer.extract_relative_links(content)
+        assert "js/init.js" in links
+
+    def test_yaml_logo(self):
+        content = "---\nlogo: images/banner.jpg\n---\n"
+        links = packer.extract_relative_links(content)
+        assert "images/banner.jpg" in links
+
+    def test_yaml_skips_absolute_import(self):
+        content = "---\nimport: https://example.com/remote.md\n---\n"
+        links = packer.extract_relative_links(content)
+        assert not links
+
+    def test_yaml_skips_absolute_import_in_list(self):
+        content = "---\nimport:\n  - local.md\n  - https://example.com/remote.md\n---\n"
+        links = packer.extract_relative_links(content)
+        assert "local.md" in links
         assert "https://example.com/remote.md" not in links
+
+    def test_yaml_ignores_other_fields(self):
+        content = "---\ntitle: My Course\nauthor: Someone\n---\n"
+        links = packer.extract_relative_links(content)
+        assert not links
+
+    def test_yaml_and_body_deduplication(self):
+        content = "---\nlink: styles/custom.css\n---\n<link href=\"styles/custom.css\">"
+        links = packer.extract_relative_links(content)
+        assert "styles/custom.css" in links
+        assert len([l for l in links if l == "styles/custom.css"]) == 1
+
+    def test_no_yaml_frontmatter(self):
+        content = "# Just a plain markdown file\n![img](image.png)"
+        links = packer.extract_relative_links(content)
+        assert "image.png" in links
+
+    def test_yaml_quoted_values(self):
+        content = '---\nlogo: "images/logo.png"\n---\n'
+        links = packer.extract_relative_links(content)
+        assert "images/logo.png" in links
 
     def test_skips_absolute_urls(self):
         content = "![logo](https://example.com/logo.png)"

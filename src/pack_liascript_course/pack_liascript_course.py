@@ -133,13 +133,59 @@ _LINK_PATTERNS = [
     re.compile(r'<link\b[^>]+\bhref=["\']([^"\']+)["\']', re.IGNORECASE),
     # HTML script src
     re.compile(r'<script\b[^>]+\bsrc=["\']([^"\']+)["\']', re.IGNORECASE),
-    # LiaScript @import
-    re.compile(r'@import\s+["\']([^"\']+)["\']', re.IGNORECASE),
     # HTML audio/video src
     re.compile(r'<(?:audio|video|source)\b[^>]+\bsrc=["\']([^"\']+)["\']', re.IGNORECASE),
 ]
 
 _ABSOLUTE_PREFIXES = ("http://", "https://", "//", "#", "mailto:", "data:")
+
+# Regex that matches a YAML frontmatter block at the very start of a document.
+_YAML_FRONTMATTER_RE = re.compile(r'^---[ \t]*\n(.*?\n)(?:---|\.\.\.)[ \t]*\n', re.DOTALL)
+
+# LiaScript YAML header fields whose values may be relative file paths.
+_YAML_LINK_FIELDS = frozenset({"import", "link", "script", "logo"})
+
+
+def _extract_yaml_frontmatter_links(content: str) -> list[str]:
+    """Return file references found in LiaScript YAML header fields.
+
+    Handles both scalar values (``field: path``) and YAML list items
+    (``- path``) for the fields ``import``, ``link``, ``script``, and
+    ``logo``.
+    """
+    match = _YAML_FRONTMATTER_RE.match(content)
+    if not match:
+        return []
+
+    frontmatter = match.group(1)
+    result: list[str] = []
+    current_field: str | None = None
+
+    for line in frontmatter.splitlines():
+        # A top-level field definition: "key: value" or "key:"
+        field_match = re.match(r'^([A-Za-z_]\w*)\s*:\s*(.*)', line)
+        if field_match:
+            field_name = field_match.group(1).lower()
+            field_value = field_match.group(2).strip().strip("\"'")
+
+            if field_name in _YAML_LINK_FIELDS:
+                current_field = field_name
+                if field_value:  # Inline scalar: "field: value"
+                    result.append(field_value)
+            else:
+                current_field = None
+        elif current_field is not None:
+            # Indented list item under the current field: "  - value"
+            list_match = re.match(r'^\s+-\s+(.*)', line)
+            if list_match:
+                value = list_match.group(1).strip().strip("\"'")
+                if value:
+                    result.append(value)
+            elif line and not line[0].isspace():
+                # Non-indented non-field line: we left the field's block.
+                current_field = None
+
+    return result
 
 
 def extract_relative_links(content: str) -> list[str]:
@@ -147,19 +193,24 @@ def extract_relative_links(content: str) -> list[str]:
     seen: set[str] = set()
     result: list[str] = []
 
+    def _add(raw: str) -> None:
+        path = raw.strip().split("?")[0].split("#")[0].strip()
+        if not path:
+            return
+        if any(path.startswith(prefix) for prefix in _ABSOLUTE_PREFIXES):
+            return
+        if path not in seen:
+            seen.add(path)
+            result.append(path)
+
+    # Links declared in the YAML frontmatter take priority.
+    for link in _extract_yaml_frontmatter_links(content):
+        _add(link)
+
+    # Links referenced in the document body via Markdown/HTML syntax.
     for pattern in _LINK_PATTERNS:
         for match in pattern.finditer(content):
-            raw = match.group(1).strip()
-            # Remove query string and fragment
-            path = raw.split("?")[0].split("#")[0].strip()
-            if not path:
-                continue
-            # Skip absolute links
-            if any(path.startswith(prefix) for prefix in _ABSOLUTE_PREFIXES):
-                continue
-            if path not in seen:
-                seen.add(path)
-                result.append(path)
+            _add(match.group(1))
 
     return result
 
