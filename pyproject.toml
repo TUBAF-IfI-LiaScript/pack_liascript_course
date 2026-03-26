@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "pack-liascript-course"
+version = "0.1.0"
+description = "Pack a LiaScript course (Markdown file + relative dependencies) into a ZIP archive."
+authors = ["TUBAF-IfI-LiaScript"]
+license = "CC0-1.0"
+readme = "README.md"
+packages = [{include = "pack_liascript_course", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0"
+
+[tool.poetry.scripts]
+pack-liascript-course = "pack_liascript_course.pack_liascript_course:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
